@@ -25,11 +25,25 @@ class Opinion(db.Model):
 def index_view():
     quantity = Opinion.query.count()
     if not quantity:
-        return 'В базе данных мнений о фильмах нет.'
+        return 'В базе данных записей нет.'
     offset_value = randrange(quantity)
     opinion = Opinion.query.offset(offset_value).first()
-    # Вот здесь в шаблон передаётся весь объект opinion
-    return render_template('index.html', opinion=opinion)
+    # Тут подключается новый шаблон
+    return render_template('opinion.html', opinion=opinion)
+
+
+@app.route('/add')
+def add_opinion_view():
+    # И тут тоже
+    return render_template('add_opinion.html')
+
+
+@app.route('/opinions/<int:id>')
+# Параметром указывается имя переменной
+def opinion_view(id):
+    # Теперь можно запрашивать мнение по id
+    opinion = Opinion.query.get_or_404(id)
+    return render_template('opinion.html', opinion=opinion)
 
 
 if __name__ == '__main__':
