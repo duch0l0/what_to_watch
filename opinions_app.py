@@ -1,6 +1,10 @@
+import csv
+import click
+
 from datetime import datetime
 from random import randrange
 
+from flask_migrate import Migrate
 from flask import Flask, redirect, render_template, url_for, flash, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
@@ -14,6 +18,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'MY SECRET KEY'
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 
 class Opinion(db.Model):
@@ -22,6 +27,7 @@ class Opinion(db.Model):
     text = db.Column(db.Text, unique=True, nullable=False)
     source = db.Column(db.String(256))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    added_by = db.Column(db.String(64))
 
 
 class OpinionForm(FlaskForm):
@@ -91,6 +97,20 @@ def internal_error(error):
     # В таких случаях можно откатить незафиксированные изменения в БД
     db.session.rollback()
     return render_template('500.html'), 500
+
+
+@app.cli.command('load_opinions')
+def load_opinions_command():
+    """Функция загрузки мнений в базу данных."""
+    with open('opinions.csv', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        counter = 0
+        for row in reader:
+            opinion = Opinion(**row)
+            db.session.add(opinion)
+            db.session.commit()
+            counter += 1
+    click.echo(f'Загружено мнений: {counter}')
 
 
 if __name__ == '__main__':
